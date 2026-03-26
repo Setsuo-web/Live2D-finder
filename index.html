@@ -1958,11 +1958,6 @@ document.addEventListener('keydown', e => {
 // ============================================================
 loadDB();
 fullRefresh();
-let db = [];
-let activeTags = { vibe: new Set(), genre: new Set() };
-let currentView = 'grid';
-let tempTags = { vibe: [], game: [], genre: [] };
-let editingId = null;
 
 function loadDB() {
   try {
