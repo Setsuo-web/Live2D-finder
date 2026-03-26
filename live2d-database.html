@@ -1,0 +1,1617 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Live2D Model Database</title>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@300;400;700;900&family=Orbitron:wght@400;700;900&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-deep: #08090f;
+    --bg-card: #0e101a;
+    --bg-panel: #13162a;
+    --accent-primary: #7c5cfc;
+    --accent-secondary: #fc5c9c;
+    --accent-cyan: #5cf4fc;
+    --accent-gold: #fcd05c;
+    --text-primary: #e8e6ff;
+    --text-secondary: #8885aa;
+    --text-muted: #4a4870;
+    --border: rgba(124,92,252,0.2);
+    --border-hover: rgba(124,92,252,0.6);
+    --glow: 0 0 20px rgba(124,92,252,0.3);
+    --glow-strong: 0 0 40px rgba(124,92,252,0.5);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg-deep);
+    color: var(--text-primary);
+    font-family: 'Noto Sans JP', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Animated background grid */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(124,92,252,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(124,92,252,0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Ambient orbs */
+  body::after {
+    content: '';
+    position: fixed;
+    top: -200px;
+    right: -200px;
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(124,92,252,0.08) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .ambient-bottom {
+    position: fixed;
+    bottom: -200px;
+    left: -100px;
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, rgba(252,92,156,0.06) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* HEADER */
+  header {
+    position: relative;
+    z-index: 10;
+    padding: 32px 40px 24px;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, rgba(14,16,26,0.95) 0%, transparent 100%);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+
+  .header-brand {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .header-icon {
+    width: 44px;
+    height: 44px;
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    box-shadow: var(--glow);
+    flex-shrink: 0;
+  }
+
+  .header-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 20px;
+    font-weight: 900;
+    letter-spacing: 0.05em;
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-cyan));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .header-subtitle {
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    font-weight: 300;
+    margin-top: 2px;
+  }
+
+  .header-stats {
+    display: flex;
+    gap: 24px;
+  }
+
+  .stat-item {
+    text-align: center;
+  }
+
+  .stat-num {
+    font-family: 'Orbitron', monospace;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--accent-cyan);
+  }
+
+  .stat-label {
+    font-size: 10px;
+    color: var(--text-muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  /* MAIN LAYOUT */
+  .layout {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    height: calc(100vh - 100px);
+  }
+
+  /* SIDEBAR */
+  .sidebar {
+    width: 280px;
+    flex-shrink: 0;
+    padding: 24px 20px;
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .sidebar::-webkit-scrollbar { width: 4px; }
+  .sidebar::-webkit-scrollbar-track { background: transparent; }
+  .sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .section-title {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* Search */
+  .search-wrapper {
+    position: relative;
+  }
+
+  .search-input {
+    width: 100%;
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 14px 10px 36px;
+    color: var(--text-primary);
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  .search-input::placeholder { color: var(--text-muted); }
+
+  .search-input:focus {
+    border-color: var(--accent-primary);
+    box-shadow: var(--glow);
+  }
+
+  .search-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    font-size: 14px;
+    pointer-events: none;
+  }
+
+  /* Filter groups */
+  .filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .filter-tag {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 7px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 12px;
+    border: 1px solid transparent;
+    transition: all 0.2s;
+    user-select: none;
+  }
+
+  .filter-tag:hover {
+    background: var(--bg-panel);
+    border-color: var(--border);
+  }
+
+  .filter-tag.active {
+    background: rgba(124,92,252,0.15);
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+    box-shadow: var(--glow);
+  }
+
+  .filter-tag-count {
+    font-size: 10px;
+    color: var(--text-muted);
+    background: var(--bg-panel);
+    padding: 2px 7px;
+    border-radius: 99px;
+  }
+
+  .filter-tag.active .filter-tag-count {
+    background: rgba(124,92,252,0.2);
+    color: var(--accent-primary);
+  }
+
+  /* Sort */
+  .sort-select {
+    width: 100%;
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 9px 12px;
+    color: var(--text-primary);
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 12px;
+    outline: none;
+    cursor: pointer;
+  }
+
+  /* Add button */
+  .btn-add {
+    width: 100%;
+    padding: 12px;
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+    border: none;
+    border-radius: 10px;
+    color: white;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
+    box-shadow: 0 4px 20px rgba(124,92,252,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .btn-add:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 28px rgba(124,92,252,0.45);
+  }
+
+  .btn-add:active { transform: translateY(0); }
+
+  /* MAIN CONTENT */
+  .main-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px 32px;
+  }
+
+  .main-content::-webkit-scrollbar { width: 4px; }
+  .main-content::-webkit-scrollbar-track { background: transparent; }
+  .main-content::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  /* View toggle */
+  .toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .results-text {
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .results-text span {
+    color: var(--accent-cyan);
+    font-family: 'Orbitron', monospace;
+    font-weight: 700;
+  }
+
+  .view-toggle {
+    display: flex;
+    gap: 4px;
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 4px;
+  }
+
+  .view-btn {
+    padding: 6px 10px;
+    border-radius: 5px;
+    border: none;
+    background: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+  }
+
+  .view-btn.active {
+    background: var(--accent-primary);
+    color: white;
+  }
+
+  /* GRID */
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 16px;
+  }
+
+  .cards-grid.list-view {
+    grid-template-columns: 1fr;
+  }
+
+  /* CARD */
+  .model-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: border-color 0.25s, box-shadow 0.25s, transform 0.2s;
+    position: relative;
+    animation: fadeInUp 0.3s ease both;
+  }
+
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .model-card:hover {
+    border-color: var(--accent-primary);
+    box-shadow: var(--glow);
+    transform: translateY(-2px);
+  }
+
+  .card-image {
+    width: 100%;
+    aspect-ratio: 3/4;
+    object-fit: cover;
+    object-position: top;
+    display: block;
+    background: var(--bg-panel);
+  }
+
+  .card-no-image {
+    width: 100%;
+    aspect-ratio: 3/4;
+    background: linear-gradient(135deg, var(--bg-panel), var(--bg-deep));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 48px;
+    color: var(--text-muted);
+  }
+
+  .card-body {
+    padding: 14px 16px 16px;
+  }
+
+  .card-name {
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .card-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 10px;
+    min-height: 20px;
+  }
+
+  .tag {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 99px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  .tag-vibe {
+    background: rgba(124,92,252,0.15);
+    color: var(--accent-primary);
+    border: 1px solid rgba(124,92,252,0.3);
+  }
+
+  .tag-genre {
+    background: rgba(92,244,252,0.1);
+    color: var(--accent-cyan);
+    border: 1px solid rgba(92,244,252,0.25);
+  }
+
+  .tag-game {
+    background: rgba(252,208,92,0.1);
+    color: var(--accent-gold);
+    border: 1px solid rgba(252,208,92,0.25);
+  }
+
+  .card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .card-link {
+    font-size: 11px;
+    color: var(--accent-primary);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    opacity: 0.8;
+    transition: opacity 0.2s;
+  }
+
+  .card-link:hover { opacity: 1; }
+
+  .card-actions {
+    display: flex;
+    gap: 6px;
+  }
+
+  .icon-btn {
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+  }
+
+  .icon-btn:hover {
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+    background: rgba(124,92,252,0.1);
+  }
+
+  .icon-btn.danger:hover {
+    border-color: var(--accent-secondary);
+    color: var(--accent-secondary);
+    background: rgba(252,92,156,0.1);
+  }
+
+  /* LIST VIEW card */
+  .cards-grid.list-view .model-card {
+    display: flex;
+    align-items: stretch;
+  }
+
+  .cards-grid.list-view .card-image,
+  .cards-grid.list-view .card-no-image {
+    width: 80px;
+    aspect-ratio: unset;
+    height: 90px;
+    flex-shrink: 0;
+    border-radius: 0;
+  }
+
+  .cards-grid.list-view .card-body {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 16px;
+  }
+
+  .cards-grid.list-view .card-name {
+    width: 160px;
+    flex-shrink: 0;
+    margin-bottom: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .cards-grid.list-view .card-tags {
+    flex: 1;
+    margin-bottom: 0;
+  }
+
+  .cards-grid.list-view .card-footer {
+    gap: 12px;
+    flex-shrink: 0;
+  }
+
+  /* EMPTY STATE */
+  .empty-state {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 80px 20px;
+    color: var(--text-muted);
+  }
+
+  .empty-state-icon {
+    font-size: 56px;
+    margin-bottom: 16px;
+    opacity: 0.4;
+  }
+
+  .empty-state h3 {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+  }
+
+  /* MODAL */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(8,9,15,0.85);
+    backdrop-filter: blur(8px);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+
+  .modal-overlay.open {
+    display: flex;
+    animation: fadeIn 0.2s ease;
+  }
+
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  .modal {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    width: 100%;
+    max-width: 680px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6), var(--glow);
+    animation: slideUp 0.25s ease;
+  }
+
+  @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+  .modal::-webkit-scrollbar { width: 4px; }
+  .modal::-webkit-scrollbar-track { background: transparent; }
+  .modal::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .modal-header {
+    padding: 24px 28px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .modal-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 16px;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-cyan));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .modal-close {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+  }
+
+  .modal-close:hover {
+    border-color: var(--accent-secondary);
+    color: var(--accent-secondary);
+  }
+
+  .modal-body {
+    padding: 24px 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .form-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .form-label span {
+    color: var(--accent-secondary);
+    font-size: 9px;
+    letter-spacing: 0;
+    text-transform: none;
+    font-weight: 400;
+    margin-left: 4px;
+  }
+
+  .form-input, .form-textarea, .form-select {
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 14px;
+    color: var(--text-primary);
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 13px;
+    outline: none;
+    width: 100%;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  .form-input:focus, .form-textarea:focus, .form-select:focus {
+    border-color: var(--accent-primary);
+    box-shadow: var(--glow);
+  }
+
+  .form-textarea {
+    resize: vertical;
+    min-height: 80px;
+    line-height: 1.6;
+  }
+
+  .form-hint {
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  .tag-input-wrapper {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 8px 12px;
+    min-height: 44px;
+    align-items: center;
+    cursor: text;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  .tag-input-wrapper:focus-within {
+    border-color: var(--accent-primary);
+    box-shadow: var(--glow);
+  }
+
+  .tag-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    border-radius: 99px;
+    font-size: 11px;
+    font-weight: 500;
+  }
+
+  .tag-pill-vibe { background: rgba(124,92,252,0.2); color: var(--accent-primary); }
+  .tag-pill-genre { background: rgba(92,244,252,0.15); color: var(--accent-cyan); }
+  .tag-pill-game { background: rgba(252,208,92,0.15); color: var(--accent-gold); }
+
+  .tag-pill-remove {
+    cursor: pointer;
+    opacity: 0.6;
+    font-size: 10px;
+    line-height: 1;
+    transition: opacity 0.15s;
+  }
+
+  .tag-pill-remove:hover { opacity: 1; }
+
+  .tag-text-input {
+    border: none;
+    background: none;
+    color: var(--text-primary);
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 13px;
+    outline: none;
+    min-width: 80px;
+    flex: 1;
+  }
+
+  .tag-text-input::placeholder { color: var(--text-muted); font-size: 12px; }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .modal-footer {
+    padding: 16px 28px 24px;
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+  }
+
+  .btn-secondary {
+    padding: 10px 20px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: none;
+    color: var(--text-secondary);
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-secondary:hover {
+    border-color: var(--text-secondary);
+    color: var(--text-primary);
+  }
+
+  .btn-primary {
+    padding: 10px 24px;
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+    border: none;
+    border-radius: 10px;
+    color: white;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.15s;
+    box-shadow: 0 4px 16px rgba(124,92,252,0.3);
+  }
+
+  .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+
+  /* DETAIL MODAL */
+  .detail-image-wrap {
+    position: relative;
+    width: 100%;
+    max-height: 320px;
+    overflow: hidden;
+    border-radius: 12px;
+    margin-bottom: 4px;
+  }
+
+  .detail-image-wrap img {
+    width: 100%;
+    object-fit: cover;
+    object-position: top;
+    display: block;
+    max-height: 320px;
+  }
+
+  .detail-image-placeholder {
+    width: 100%;
+    height: 200px;
+    background: var(--bg-panel);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 64px;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+  }
+
+  .detail-name {
+    font-size: 22px;
+    font-weight: 900;
+    margin-bottom: 4px;
+  }
+
+  .detail-link-row {
+    margin-bottom: 16px;
+  }
+
+  .detail-link {
+    font-size: 12px;
+    color: var(--accent-cyan);
+    text-decoration: none;
+    word-break: break-all;
+  }
+
+  .detail-link:hover { text-decoration: underline; }
+
+  .detail-section {
+    margin-bottom: 14px;
+  }
+
+  .detail-section-title {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+
+  .detail-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .detail-notes {
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--text-secondary);
+    white-space: pre-wrap;
+  }
+
+  /* Export/Import bar */
+  .data-bar {
+    padding: 10px 40px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(14,16,26,0.6);
+    position: relative;
+    z-index: 5;
+  }
+
+  .data-bar-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 0.1em;
+  }
+
+  .btn-data {
+    padding: 5px 14px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: none;
+    color: var(--text-secondary);
+    font-size: 11px;
+    font-family: 'Noto Sans JP', sans-serif;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .btn-data:hover {
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+    background: rgba(124,92,252,0.08);
+  }
+
+  /* Notification */
+  .notification {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: var(--bg-card);
+    border: 1px solid var(--accent-primary);
+    border-radius: 12px;
+    padding: 12px 20px;
+    font-size: 13px;
+    color: var(--text-primary);
+    box-shadow: var(--glow-strong);
+    z-index: 200;
+    transform: translateY(80px);
+    opacity: 0;
+    transition: transform 0.3s, opacity 0.3s;
+  }
+
+  .notification.show {
+    transform: translateY(0);
+    opacity: 1;
+  }
+
+  /* Active filter chips */
+  .active-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 14px;
+  }
+
+  .active-filter-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 99px;
+    font-size: 11px;
+    font-weight: 500;
+    background: rgba(124,92,252,0.15);
+    border: 1px solid rgba(124,92,252,0.4);
+    color: var(--accent-primary);
+    cursor: pointer;
+  }
+
+  .active-filter-chip:hover { background: rgba(124,92,252,0.25); }
+
+  /* image URL preview */
+  .image-preview {
+    width: 100%;
+    height: 80px;
+    object-fit: cover;
+    object-position: top;
+    border-radius: 8px;
+    margin-top: 8px;
+    display: none;
+  }
+
+  .clear-all-btn {
+    font-size: 11px;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: none;
+    transition: all 0.2s;
+    margin-left: 4px;
+  }
+
+  .clear-all-btn:hover { color: var(--accent-secondary); border-color: var(--accent-secondary); }
+</style>
+</head>
+<body>
+
+<div class="ambient-bottom"></div>
+
+<!-- HEADER -->
+<header>
+  <div class="header-brand">
+    <div class="header-icon">🎭</div>
+    <div>
+      <div class="header-title">LIVE2D DATABASE</div>
+      <div class="header-subtitle">Model Collection Manager</div>
+    </div>
+  </div>
+  <div class="header-stats">
+    <div class="stat-item">
+      <div class="stat-num" id="total-count">0</div>
+      <div class="stat-label">Models</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num" id="vibe-count">0</div>
+      <div class="stat-label">Vibes</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num" id="genre-count">0</div>
+      <div class="stat-label">Genres</div>
+    </div>
+  </div>
+</header>
+
+<!-- DATA BAR -->
+<div class="data-bar">
+  <span class="data-bar-label">データ管理：</span>
+  <button class="btn-data" onclick="exportData()">📤 JSON書き出し</button>
+  <button class="btn-data" onclick="document.getElementById('import-file').click()">📥 JSON読み込み</button>
+  <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(event)">
+  <button class="btn-data" onclick="exportCSV()">📋 CSV書き出し</button>
+</div>
+
+<!-- LAYOUT -->
+<div class="layout">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div>
+      <div class="section-title">検索</div>
+      <div class="search-wrapper">
+        <span class="search-icon">🔍</span>
+        <input type="text" class="search-input" id="search-input" placeholder="モデル名、タグで検索…" oninput="renderCards()">
+      </div>
+    </div>
+
+    <div>
+      <div class="section-title">雰囲気タグ</div>
+      <div class="filter-group" id="vibe-filters"></div>
+    </div>
+
+    <div>
+      <div class="section-title">ゲームジャンル</div>
+      <div class="filter-group" id="genre-filters"></div>
+    </div>
+
+    <div>
+      <div class="section-title">並び替え</div>
+      <select class="sort-select" id="sort-select" onchange="renderCards()">
+        <option value="name-asc">名前 A→Z</option>
+        <option value="name-desc">名前 Z→A</option>
+        <option value="added-desc">追加日 新しい順</option>
+        <option value="added-asc">追加日 古い順</option>
+      </select>
+    </div>
+
+    <div>
+      <button class="btn-add" onclick="openAddModal()">
+        ＋ モデルを追加
+      </button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main-content">
+    <div class="toolbar">
+      <div class="results-text">
+        <span id="filtered-count">0</span> 件表示
+      </div>
+      <div class="view-toggle">
+        <button class="view-btn active" id="grid-btn" onclick="setView('grid')" title="グリッド">⊞</button>
+        <button class="view-btn" id="list-btn" onclick="setView('list')" title="リスト">☰</button>
+      </div>
+    </div>
+    <div id="active-filters" class="active-filters"></div>
+    <div class="cards-grid" id="cards-grid"></div>
+  </main>
+</div>
+
+<!-- ADD/EDIT MODAL -->
+<div class="modal-overlay" id="form-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-title">モデルを追加</div>
+      <button class="modal-close" onclick="closeFormModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="edit-id">
+
+      <div class="form-group">
+        <label class="form-label">モデル名 <span>※必須</span></label>
+        <input type="text" class="form-input" id="f-name" placeholder="例：桜ノ宮コハル">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">キービジュアル URL</label>
+        <input type="url" class="form-input" id="f-image" placeholder="https://..." oninput="previewImage()">
+        <img id="image-preview" class="image-preview" alt="プレビュー">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">購入ページ URL</label>
+        <input type="url" class="form-input" id="f-link" placeholder="https://booth.pm/...">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">雰囲気タグ <span>Enterで追加</span></label>
+        <div class="tag-input-wrapper" onclick="document.getElementById('f-vibe-input').focus()">
+          <div id="f-vibe-pills"></div>
+          <input type="text" class="tag-text-input" id="f-vibe-input" placeholder="例：クール、ダーク、可愛い…"
+            onkeydown="handleTagInput(event,'vibe')">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">使えそうなゲームタイトル <span>Enterで追加</span></label>
+        <div class="tag-input-wrapper" onclick="document.getElementById('f-game-input').focus()">
+          <div id="f-game-pills"></div>
+          <input type="text" class="tag-text-input" id="f-game-input" placeholder="例：原神、FFXIV、黒い砂漠…"
+            onkeydown="handleTagInput(event,'game')">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">ゲームジャンル <span>Enterで追加</span></label>
+        <div class="tag-input-wrapper" onclick="document.getElementById('f-genre-input').focus()">
+          <div id="f-genre-pills"></div>
+          <input type="text" class="tag-text-input" id="f-genre-input" placeholder="例：MMORPG、ローグライク、ホラー…"
+            onkeydown="handleTagInput(event,'genre')">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">規約・注意事項</label>
+        <textarea class="form-textarea" id="f-notes" placeholder="商用利用：不可&#10;配信利用：可（クレジット表記あり）&#10;改変：可&#10;etc..." rows="4"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeFormModal()">キャンセル</button>
+      <button class="btn-primary" onclick="saveModel()">保存する</button>
+    </div>
+  </div>
+</div>
+
+<!-- DETAIL MODAL -->
+<div class="modal-overlay" id="detail-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">モデル詳細</div>
+      <button class="modal-close" onclick="closeDetailModal()">✕</button>
+    </div>
+    <div class="modal-body" id="detail-body"></div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeDetailModal()">閉じる</button>
+      <button class="btn-primary" id="detail-edit-btn">✏️ 編集</button>
+    </div>
+  </div>
+</div>
+
+<!-- Notification -->
+<div class="notification" id="notification"></div>
+
+<script>
+// ============================================================
+// DATA STORE
+// ============================================================
+const STORAGE_KEY = 'live2d_db_v1';
+let db = [];
+let activeTags = { vibe: new Set(), genre: new Set() };
+let currentView = 'grid';
+let tempTags = { vibe: [], game: [], genre: [] };
+let editingId = null;
+
+function loadDB() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) db = JSON.parse(raw);
+  } catch(e) { db = []; }
+  if (!db.length) db = getSampleData();
+}
+
+function saveDB() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+}
+
+function getSampleData() {
+  return [
+    {
+      id: 'sample1',
+      name: 'サクラ・ミツキ',
+      image: '',
+      link: 'https://booth.pm/',
+      vibes: ['和風', '神秘的', 'クール'],
+      games: ['原神', 'FFXIV'],
+      genres: ['MMORPG', 'オープンワールド'],
+      notes: '商用利用：要連絡\n配信利用：可（クレジット表記必須）\n改変：可（配布禁止）',
+      added: Date.now() - 86400000
+    },
+    {
+      id: 'sample2',
+      name: 'ルナ・ヴェイン',
+      image: '',
+      link: 'https://booth.pm/',
+      vibes: ['ダーク', 'ゴシック', 'セクシー'],
+      games: ['黒い砂漠', 'ディアブロ4'],
+      genres: ['ダークファンタジー', 'アクションRPG'],
+      notes: '商用利用：可\n配信利用：可\n改変：不可',
+      added: Date.now() - 172800000
+    },
+    {
+      id: 'sample3',
+      name: 'ピーチ・ポポ',
+      image: '',
+      link: 'https://booth.pm/',
+      vibes: ['キュート', '元気', 'ふわふわ'],
+      games: ['あつまれ どうぶつの森', 'ポケモン'],
+      genres: ['カジュアル', 'コミュニティ'],
+      notes: '商用利用：不可\n配信利用：可\n改変：可（クレジット必須）',
+      added: Date.now()
+    }
+  ];
+}
+
+// ============================================================
+// RENDER
+// ============================================================
+function getAllTags(field) {
+  const set = new Set();
+  db.forEach(m => (m[field] || []).forEach(t => set.add(t)));
+  return [...set].sort();
+}
+
+function updateStats() {
+  document.getElementById('total-count').textContent = db.length;
+  document.getElementById('vibe-count').textContent = getAllTags('vibes').length;
+  document.getElementById('genre-count').textContent = getAllTags('genres').length;
+}
+
+function renderSidebarFilters() {
+  renderFilterGroup('vibe-filters', getAllTags('vibes'), 'vibe');
+  renderFilterGroup('genre-filters', getAllTags('genres'), 'genre');
+}
+
+function renderFilterGroup(containerId, tags, type) {
+  const el = document.getElementById(containerId);
+  if (!tags.length) { el.innerHTML = '<div style="font-size:11px;color:var(--text-muted);padding:4px 0">タグなし</div>'; return; }
+  el.innerHTML = tags.map(tag => {
+    const count = db.filter(m => (m[type === 'vibe' ? 'vibes' : 'genres'] || []).includes(tag)).length;
+    const active = activeTags[type].has(tag) ? 'active' : '';
+    return `<div class="filter-tag ${active}" onclick="toggleFilter('${type}','${escHtml(tag)}')" data-tag="${escHtml(tag)}" data-type="${type}">
+      <span>${escHtml(tag)}</span>
+      <span class="filter-tag-count">${count}</span>
+    </div>`;
+  }).join('');
+}
+
+function toggleFilter(type, tag) {
+  if (activeTags[type].has(tag)) activeTags[type].delete(tag);
+  else activeTags[type].add(tag);
+  renderSidebarFilters();
+  renderCards();
+  renderActiveFilters();
+}
+
+function renderActiveFilters() {
+  const el = document.getElementById('active-filters');
+  const chips = [];
+  activeTags.vibe.forEach(t => chips.push(`<div class="active-filter-chip" onclick="toggleFilter('vibe','${escHtml(t)}')">🎨 ${escHtml(t)} ✕</div>`));
+  activeTags.genre.forEach(t => chips.push(`<div class="active-filter-chip" onclick="toggleFilter('genre','${escHtml(t)}')">🎮 ${escHtml(t)} ✕</div>`));
+  if (chips.length > 1) chips.push(`<button class="clear-all-btn" onclick="clearAllFilters()">すべてクリア</button>`);
+  el.innerHTML = chips.join('');
+}
+
+function clearAllFilters() {
+  activeTags.vibe.clear();
+  activeTags.genre.clear();
+  renderSidebarFilters();
+  renderCards();
+  renderActiveFilters();
+}
+
+function getFilteredSorted() {
+  const q = document.getElementById('search-input').value.toLowerCase();
+  const sort = document.getElementById('sort-select').value;
+
+  let results = db.filter(m => {
+    const vibeOk = !activeTags.vibe.size || [...activeTags.vibe].every(t => (m.vibes || []).includes(t));
+    const genreOk = !activeTags.genre.size || [...activeTags.genre].every(t => (m.genres || []).includes(t));
+    if (!vibeOk || !genreOk) return false;
+    if (!q) return true;
+    const hay = [m.name, ...(m.vibes||[]), ...(m.games||[]), ...(m.genres||[]), m.notes||''].join(' ').toLowerCase();
+    return hay.includes(q);
+  });
+
+  results.sort((a, b) => {
+    if (sort === 'name-asc') return a.name.localeCompare(b.name, 'ja');
+    if (sort === 'name-desc') return b.name.localeCompare(a.name, 'ja');
+    if (sort === 'added-desc') return (b.added||0) - (a.added||0);
+    if (sort === 'added-asc') return (a.added||0) - (b.added||0);
+    return 0;
+  });
+  return results;
+}
+
+function renderCards() {
+  const results = getFilteredSorted();
+  document.getElementById('filtered-count').textContent = results.length;
+  const grid = document.getElementById('cards-grid');
+
+  if (!results.length) {
+    grid.innerHTML = `<div class="empty-state">
+      <div class="empty-state-icon">🎭</div>
+      <h3>モデルが見つかりません</h3>
+      <p style="font-size:13px;color:var(--text-muted);margin-top:6px">検索条件を変えるか、新しいモデルを追加してください</p>
+    </div>`;
+    return;
+  }
+
+  grid.innerHTML = results.map((m, i) => {
+    const imageEl = m.image
+      ? `<img class="card-image" src="${escHtml(m.image)}" alt="${escHtml(m.name)}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+      + `<div class="card-no-image" style="display:none">🎭</div>`
+      : `<div class="card-no-image">🎭</div>`;
+
+    const vibeTags = (m.vibes||[]).slice(0,3).map(t => `<span class="tag tag-vibe">${escHtml(t)}</span>`).join('');
+    const genreTags = (m.genres||[]).slice(0,2).map(t => `<span class="tag tag-genre">${escHtml(t)}</span>`).join('');
+    const allTags = vibeTags + genreTags;
+
+    return `<div class="model-card" style="animation-delay:${i * 0.04}s" onclick="openDetail('${m.id}')">
+      ${imageEl}
+      <div class="card-body">
+        <div class="card-name">${escHtml(m.name)}</div>
+        <div class="card-tags">${allTags || '<span style="font-size:11px;color:var(--text-muted)">タグなし</span>'}</div>
+        <div class="card-footer">
+          ${m.link ? `<a class="card-link" href="${escHtml(m.link)}" target="_blank" rel="noopener" onclick="e=>e.stopPropagation()">🔗 購入ページ</a>` : '<span style="font-size:11px;color:var(--text-muted)">リンクなし</span>'}
+          <div class="card-actions">
+            <button class="icon-btn" title="編集" onclick="event.stopPropagation();openEditModal('${m.id}')">✏️</button>
+            <button class="icon-btn danger" title="削除" onclick="event.stopPropagation();deleteModel('${m.id}')">🗑</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function setView(v) {
+  currentView = v;
+  document.getElementById('cards-grid').classList.toggle('list-view', v === 'list');
+  document.getElementById('grid-btn').classList.toggle('active', v === 'grid');
+  document.getElementById('list-btn').classList.toggle('active', v === 'list');
+}
+
+// ============================================================
+// DETAIL MODAL
+// ============================================================
+function openDetail(id) {
+  const m = db.find(x => x.id === id);
+  if (!m) return;
+  const body = document.getElementById('detail-body');
+
+  const imageEl = m.image
+    ? `<div class="detail-image-wrap"><img src="${escHtml(m.image)}" alt="${escHtml(m.name)}" onerror="this.parentElement.innerHTML='<div class=\\'detail-image-placeholder\\'>🎭</div>'"></div>`
+    : `<div class="detail-image-placeholder">🎭</div>`;
+
+  const vibeTags = (m.vibes||[]).map(t => `<span class="tag tag-vibe">${escHtml(t)}</span>`).join('');
+  const gameTags = (m.games||[]).map(t => `<span class="tag tag-game">${escHtml(t)}</span>`).join('');
+  const genreTags = (m.genres||[]).map(t => `<span class="tag tag-genre">${escHtml(t)}</span>`).join('');
+
+  body.innerHTML = `
+    ${imageEl}
+    <div class="detail-name">${escHtml(m.name)}</div>
+    ${m.link ? `<div class="detail-link-row"><a class="detail-link" href="${escHtml(m.link)}" target="_blank" rel="noopener">🔗 ${escHtml(m.link)}</a></div>` : ''}
+    ${vibeTags ? `<div class="detail-section"><div class="detail-section-title">🎨 雰囲気タグ</div><div class="detail-tags">${vibeTags}</div></div>` : ''}
+    ${gameTags ? `<div class="detail-section"><div class="detail-section-title">🎮 使えそうなゲーム</div><div class="detail-tags">${gameTags}</div></div>` : ''}
+    ${genreTags ? `<div class="detail-section"><div class="detail-section-title">📂 ゲームジャンル</div><div class="detail-tags">${genreTags}</div></div>` : ''}
+    ${m.notes ? `<div class="detail-section"><div class="detail-section-title">📋 規約・注意事項</div><div class="detail-notes">${escHtml(m.notes)}</div></div>` : ''}
+  `;
+
+  document.getElementById('detail-edit-btn').onclick = () => { closeDetailModal(); openEditModal(id); };
+  document.getElementById('detail-modal').classList.add('open');
+}
+
+function closeDetailModal() {
+  document.getElementById('detail-modal').classList.remove('open');
+}
+
+// ============================================================
+// FORM MODAL
+// ============================================================
+function openAddModal() {
+  editingId = null;
+  tempTags = { vibe: [], game: [], genre: [] };
+  document.getElementById('modal-title').textContent = 'モデルを追加';
+  document.getElementById('f-name').value = '';
+  document.getElementById('f-image').value = '';
+  document.getElementById('f-link').value = '';
+  document.getElementById('f-notes').value = '';
+  document.getElementById('f-vibe-input').value = '';
+  document.getElementById('f-game-input').value = '';
+  document.getElementById('f-genre-input').value = '';
+  document.getElementById('image-preview').style.display = 'none';
+  renderTagPills('vibe');
+  renderTagPills('game');
+  renderTagPills('genre');
+  document.getElementById('form-modal').classList.add('open');
+  setTimeout(() => document.getElementById('f-name').focus(), 100);
+}
+
+function openEditModal(id) {
+  const m = db.find(x => x.id === id);
+  if (!m) return;
+  editingId = id;
+  tempTags = { vibe: [...(m.vibes||[])], game: [...(m.games||[])], genre: [...(m.genres||[])] };
+  document.getElementById('modal-title').textContent = 'モデルを編集';
+  document.getElementById('f-name').value = m.name || '';
+  document.getElementById('f-image').value = m.image || '';
+  document.getElementById('f-link').value = m.link || '';
+  document.getElementById('f-notes').value = m.notes || '';
+  renderTagPills('vibe');
+  renderTagPills('game');
+  renderTagPills('genre');
+  previewImage();
+  document.getElementById('form-modal').classList.add('open');
+}
+
+function closeFormModal() {
+  document.getElementById('form-modal').classList.remove('open');
+}
+
+function handleTagInput(e, type) {
+  if (e.key === 'Enter' || e.key === ',') {
+    e.preventDefault();
+    const val = e.target.value.trim().replace(/,/g, '');
+    if (val && !tempTags[type].includes(val)) {
+      tempTags[type].push(val);
+      renderTagPills(type);
+    }
+    e.target.value = '';
+  } else if (e.key === 'Backspace' && !e.target.value && tempTags[type].length) {
+    tempTags[type].pop();
+    renderTagPills(type);
+  }
+}
+
+function renderTagPills(type) {
+  const ids = { vibe: 'f-vibe-pills', game: 'f-game-pills', genre: 'f-genre-pills' };
+  const cls = { vibe: 'tag-pill-vibe', game: 'tag-pill-game', genre: 'tag-pill-genre' };
+  const el = document.getElementById(ids[type]);
+  el.innerHTML = tempTags[type].map((t, i) =>
+    `<span class="tag-pill ${cls[type]}">${escHtml(t)}<span class="tag-pill-remove" onclick="removeTag('${type}',${i})">✕</span></span>`
+  ).join('');
+}
+
+function removeTag(type, i) {
+  tempTags[type].splice(i, 1);
+  renderTagPills(type);
+}
+
+function previewImage() {
+  const url = document.getElementById('f-image').value.trim();
+  const img = document.getElementById('image-preview');
+  if (url) { img.src = url; img.style.display = 'block'; }
+  else { img.style.display = 'none'; }
+}
+
+function saveModel() {
+  const name = document.getElementById('f-name').value.trim();
+  if (!name) { showNotification('❌ モデル名は必須です'); return; }
+
+  const model = {
+    id: editingId || 'model_' + Date.now(),
+    name,
+    image: document.getElementById('f-image').value.trim(),
+    link: document.getElementById('f-link').value.trim(),
+    vibes: [...tempTags.vibe],
+    games: [...tempTags.game],
+    genres: [...tempTags.genre],
+    notes: document.getElementById('f-notes').value.trim(),
+    added: editingId ? (db.find(x => x.id === editingId)?.added || Date.now()) : Date.now()
+  };
+
+  if (editingId) {
+    const idx = db.findIndex(x => x.id === editingId);
+    if (idx !== -1) db[idx] = model;
+  } else {
+    db.unshift(model);
+  }
+
+  saveDB();
+  closeFormModal();
+  fullRefresh();
+  showNotification(editingId ? '✅ 更新しました' : '✅ 追加しました');
+}
+
+function deleteModel(id) {
+  if (!confirm('このモデルを削除しますか？')) return;
+  db = db.filter(x => x.id !== id);
+  saveDB();
+  fullRefresh();
+  showNotification('🗑 削除しました');
+}
+
+// ============================================================
+// EXPORT / IMPORT
+// ============================================================
+function exportData() {
+  const blob = new Blob([JSON.stringify(db, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'live2d-database.json';
+  a.click();
+  showNotification('📤 JSONを書き出しました');
+}
+
+function importData(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const imported = JSON.parse(ev.target.result);
+      if (!Array.isArray(imported)) throw new Error();
+      if (!confirm(`${imported.length}件のデータを読み込みます。現在のデータは上書きされます。`)) return;
+      db = imported;
+      saveDB();
+      fullRefresh();
+      showNotification(`📥 ${imported.length}件読み込みました`);
+    } catch { showNotification('❌ JSONの読み込みに失敗しました'); }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+}
+
+function exportCSV() {
+  const headers = ['名前', '画像URL', '購入URL', '雰囲気タグ', 'ゲームタイトル', 'ジャンル', '規約・注意事項', '追加日'];
+  const rows = db.map(m => [
+    m.name, m.image, m.link,
+    (m.vibes||[]).join('|'), (m.games||[]).join('|'), (m.genres||[]).join('|'),
+    (m.notes||'').replace(/\n/g,'\\n'), new Date(m.added||0).toLocaleDateString('ja-JP')
+  ]);
+  const csv = [headers, ...rows].map(r => r.map(c => `"${(c||'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'live2d-database.csv';
+  a.click();
+  showNotification('📋 CSVを書き出しました');
+}
+
+// ============================================================
+// UTILS
+// ============================================================
+function escHtml(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+function showNotification(msg) {
+  const el = document.getElementById('notification');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2800);
+}
+
+function fullRefresh() {
+  updateStats();
+  renderSidebarFilters();
+  renderCards();
+  renderActiveFilters();
+}
+
+// Close modals on overlay click
+document.getElementById('form-modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeFormModal(); });
+document.getElementById('detail-modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeDetailModal(); });
+
+// Keyboard shortcuts
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closeFormModal(); closeDetailModal(); }
+  if ((e.ctrlKey || e.metaKey) && e.key === 'k') { e.preventDefault(); document.getElementById('search-input').focus(); }
+});
+
+// ============================================================
+// INIT
+// ============================================================
+loadDB();
+fullRefresh();
+</script>
+</body>
+</html>
